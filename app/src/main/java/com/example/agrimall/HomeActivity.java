@@ -24,6 +24,7 @@ public class HomeActivity extends AppCompatActivity {
         // Load HomeFragment by default
         loadFragment(new HomeFragment());
 
+
         bottomNavigationView.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull android.view.MenuItem item) {

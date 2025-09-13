@@ -9,9 +9,9 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="com.example.agrimall" />
-                  <option name="mobileSdkAppId" value="1:947304046184:android:8d908788deffbd8651e5dd" />
-                  <option name="projectId" value="agrimall-backend-24831" />
-                  <option name="projectNumber" value="947304046184" />
+                  <option name="mobileSdkAppId" value="1:9923233807:android:5790047a9a55e9a67f7b7a" />
+                  <option name="projectId" value="agriapp-29afc" />
+                  <option name="projectNumber" value="9923233807" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

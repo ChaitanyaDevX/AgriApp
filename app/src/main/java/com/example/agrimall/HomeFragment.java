@@ -11,7 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,7 +25,6 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
-import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -39,8 +37,7 @@ public class HomeFragment extends Fragment implements ProductAdapter.OnProductCl
     private FirebaseFirestore db;
     private EditText searchBar;
     private ImageButton micButton;
-
-    TextView txtWelcome;
+    private TextView txtWelcome;
 
     private static final int REQUEST_CODE_SPEECH_INPUT = 100;
 
@@ -51,39 +48,40 @@ public class HomeFragment extends Fragment implements ProductAdapter.OnProductCl
 
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
-        // Initialize UI Elements
+        // Initialize UI elements
         searchBar = view.findViewById(R.id.edtSearch);
         micButton = view.findViewById(R.id.mic_button);
-        txtWelcome=view.findViewById(R.id.txtWelcome);
+        txtWelcome = view.findViewById(R.id.txtWelcome);
         recyclerView = view.findViewById(R.id.recycler);
-        recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        recyclerView.setLayoutManager(new GridLayoutManager(requireContext(), 2));
+
         productList = new ArrayList<>();
         productAdapter = new ProductAdapter(productList, this);
         recyclerView.setAdapter(productAdapter);
 
+        db = FirebaseFirestore.getInstance();
+
+        // Load current user
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
             String uid = user.getUid();
-
-            FirebaseFirestore.getInstance().collection("users")
-                    .document(uid)
+            db.collection("users").document(uid)
                     .get()
                     .addOnSuccessListener(documentSnapshot -> {
                         if (documentSnapshot.exists()) {
                             String fullName = documentSnapshot.getString("name");
                             if (fullName != null && !fullName.isEmpty()) {
-                                String firstName = fullName.split(" ")[0];  // get first word
+                                String firstName = fullName.split(" ")[0];
                                 txtWelcome.setText("Hi " + firstName + "! 👋");
                             }
                         }
                     })
                     .addOnFailureListener(e -> {
-                        Toast.makeText(getContext(), "Failed to load user data", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "Failed to load user data", Toast.LENGTH_SHORT).show();
                     });
         }
-        db = FirebaseFirestore.getInstance();
 
-        // Search with text input
+        // Text search
         searchBar.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -96,21 +94,18 @@ public class HomeFragment extends Fragment implements ProductAdapter.OnProductCl
             @Override public void afterTextChanged(Editable s) {}
         });
 
-        // Search with keyboard action
         searchBar.setOnEditorActionListener((v, actionId, event) -> {
             String keyword = searchBar.getText().toString().trim();
             if (!keyword.isEmpty()) {
                 searchProductsInFirestore(keyword);
             } else {
-                Toast.makeText(getContext(), "Enter keyword to search", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Enter keyword to search", Toast.LENGTH_SHORT).show();
             }
             return true;
         });
 
         // Voice search
         micButton.setOnClickListener(v -> startVoiceRecognition());
-
-
 
         // Call now button
         view.findViewById(R.id.btnCallNow).setOnClickListener(v -> {
@@ -131,7 +126,7 @@ public class HomeFragment extends Fragment implements ProductAdapter.OnProductCl
         try {
             startActivityForResult(intent, REQUEST_CODE_SPEECH_INPUT);
         } catch (Exception e) {
-            Toast.makeText(getActivity(), "Voice recognition is not supported on this device.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Voice recognition not supported", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -148,10 +143,8 @@ public class HomeFragment extends Fragment implements ProductAdapter.OnProductCl
         }
     }
 
-    // 🔍 Case-insensitive search logic (local filtering)
     private void searchProductsInFirestore(String keyword) {
         String keywordLower = keyword.toLowerCase();
-
         db.collection("products")
                 .get()
                 .addOnCompleteListener(task -> {
@@ -159,52 +152,44 @@ public class HomeFragment extends Fragment implements ProductAdapter.OnProductCl
                         productList.clear();
                         for (QueryDocumentSnapshot doc : task.getResult()) {
                             String name = doc.getString("name");
-                            double price = doc.getDouble("price");
+                            Double price = doc.getDouble("price");
                             String description = doc.getString("description");
                             String imageUrl = doc.getString("imageURL");
 
                             if (name != null && name.toLowerCase().contains(keywordLower)) {
-                                productList.add(new Product(name, (int) price, description, imageUrl));
+                                productList.add(new Product(name, price != null ? price.intValue() : 0, description, imageUrl));
                             }
                         }
-
                         if (productList.isEmpty()) {
-                            Toast.makeText(getContext(), "No matching products found!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(), "No matching products found!", Toast.LENGTH_SHORT).show();
                         }
-
                         productAdapter.notifyDataSetChanged();
                     } else {
-                        Toast.makeText(getContext(), "Search failed!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "Search failed!", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
-    // 🔄 Load all products from Firestore
     private void loadProductsFromFirestore() {
         db.collection("products").addSnapshotListener((value, error) -> {
             if (error != null || value == null) {
-                Toast.makeText(getContext(), "Error loading products", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Error loading products", Toast.LENGTH_SHORT).show();
                 return;
             }
             productList.clear();
             for (QueryDocumentSnapshot doc : value) {
                 String name = doc.getString("name");
-                double price = doc.getDouble("price");
+                Double price = doc.getDouble("price");
                 String description = doc.getString("description");
                 String imageUrl = doc.getString("imageURL");
-                productList.add(new Product(name, (int) price, description, imageUrl));
+                productList.add(new Product(name, price != null ? price.intValue() : 0, description, imageUrl));
             }
             productAdapter.notifyDataSetChanged();
         });
     }
 
     @Override
-    public void onProductClick(Product product) {
-        // Handle product click if needed
-    }
-
+    public void onProductClick(Product product) {}
     @Override
-    public void onAddToCart(Product product) {
-        // Handle Add to Cart if needed
-    }
+    public void onAddToCart(Product product) {}
 }

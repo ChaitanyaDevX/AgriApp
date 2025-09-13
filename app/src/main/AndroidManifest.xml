@@ -7,7 +7,6 @@
         android:required="false" />
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -27,7 +26,8 @@
         tools:targetApi="31">
         <activity
             android:name=".PushNotification"
-            android:exported="false" />
+            android:exported="false"
+            tools:ignore="MissingClass" />
         <activity
             android:name=".nav_header"
             android:exported="false" />
